@@ -49,7 +49,11 @@ export default function AddEditProduct() {
         toast.success('Product created');
       }
       navigate('/admin/products');
-    } catch { toast.error('Save failed'); }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Save failed';
+      toast.error(msg);
+      console.error('Product save error:', err?.response?.data || err);
+    }
     finally { setLoading(false); }
   };
 
