@@ -42,7 +42,7 @@ export default function ProductDetail() {
     </div>
   );
 
-  const imgs = product.images?.length ? product.images : [{ url: 'https://via.placeholder.com/800?text=No+Image' }];
+  const imgs = product.images?.length ? product.images : ['https://via.placeholder.com/800?text=No+Image'];
   const customizations = Object.entries(product.customizationOptions || {})
     .filter(([, v]) => v)
     .map(([k]) => ({ sublimation: 'Sublimation', embroidery: 'Embroidery', screenPrint: 'Screen Print', privateLabel: 'Private Label' }[k]));
@@ -65,7 +65,7 @@ export default function ProductDetail() {
               <div className="aspect-square bg-dark-700 rounded-sm overflow-hidden mb-4">
                 <motion.img
                   key={activeImg}
-                  src={imgs[activeImg]?.url}
+                  src={imgs[activeImg]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   initial={{ opacity: 0 }}
@@ -81,7 +81,7 @@ export default function ProductDetail() {
                     className={`w-20 h-20 rounded-sm overflow-hidden border-2 transition-colors
                       ${activeImg === i ? 'border-brand-500' : 'border-transparent'}`}
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -3,14 +3,15 @@ import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
-  description: { type: String, required: true },
+  description: { type: String, default: '' },
   price: { type: Number, required: true, min: 0 },
   category: {
     type: String,
     required: true,
     enum: ['Sportswear', 'Hosiery', 'Sublimation', 'Teamwear', 'Custom'],
   },
-  images: [{ url: String, public_id: String }],
+  // Store image URLs as plain strings — simple, no casting errors
+  images: [String],
   MOQ: { type: Number, default: 50 },
   customizationOptions: {
     sublimation: { type: Boolean, default: false },

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
-  const img = product.images?.[0]?.url || 'https://via.placeholder.com/400x400?text=No+Image';
+  const img = product.images?.[0] || 'https://via.placeholder.com/400x400?text=No+Image';
 
   const handleAddToCart = (e) => {
     e.preventDefault();

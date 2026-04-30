@@ -29,7 +29,7 @@ export default function Cart() {
               {items.map((item) => (
                 <div key={item._id} className="card p-4 flex gap-4">
                   <img
-                    src={item.images?.[0]?.url || 'https://via.placeholder.com/80'}
+                    src={item.images?.[0] || 'https://via.placeholder.com/80'}
                     alt={item.name}
                     className="w-20 h-20 object-cover rounded-sm"
                   />

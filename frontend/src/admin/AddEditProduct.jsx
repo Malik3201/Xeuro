@@ -29,8 +29,8 @@ export default function AddEditProduct() {
     if (isEdit) {
       api.get(`/products/${id}`).then(({ data }) => {
         setForm({ ...data, price: data.price.toString() });
-        // Pre-fill image URLs from existing product
-        const urls = data.images?.map((img) => img.url).filter(Boolean);
+        // Pre-fill image URLs — images is now [String]
+        const urls = data.images?.filter(Boolean);
         setImageUrls(urls?.length ? urls : ['']);
       });
     }

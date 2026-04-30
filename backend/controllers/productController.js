@@ -2,22 +2,30 @@
 import Product from '../models/Product.js';
 
 /**
- * Normalize the images field — handles all incoming shapes:
- *   - single string:          "https://..."
- *   - array of strings:       ["https://...", "https://..."]
- *   - already shaped objects: [{ url: "https://..." }]
- * Always returns: [{ url: String, public_id: "" }]
+ * Normalize images to a plain array of URL strings.
+ * Handles: string | string[] | {url}[] | undefined
  */
 const normalizeImages = (raw) => {
   if (!raw) return [];
-  const arr = Array.isArray(raw) ? raw : [raw]; // wrap string in array
+  let arr = raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) arr = parsed;
+      else arr = [raw];
+    } catch {
+      arr = [raw];
+    }
+  }
+  if (!Array.isArray(arr)) arr = [arr];
+
   return arr
     .map((item) => {
-      if (typeof item === 'string') return { url: item.trim(), public_id: '' };
-      if (item && typeof item === 'object' && item.url) return { url: item.url.trim(), public_id: item.public_id || '' };
+      if (typeof item === 'string') return item.trim();
+      if (item && typeof item === 'object' && item.url) return String(item.url).trim();
       return null;
     })
-    .filter((item) => item && item.url); // drop empty/invalid
+    .filter(Boolean);
 };
 
 export const getProducts = async (req, res) => {
@@ -56,7 +64,6 @@ export const createProduct = async (req, res) => {
   try {
     const body = { ...req.body };
 
-    // Parse customizationOptions if sent as JSON string
     if (typeof body.customizationOptions === 'string') {
       try { body.customizationOptions = JSON.parse(body.customizationOptions); }
       catch { body.customizationOptions = {}; }
@@ -67,7 +74,9 @@ export const createProduct = async (req, res) => {
     if (body.isAvailable !== undefined)
       body.isAvailable = body.isAvailable === 'true' || body.isAvailable === true;
 
+    console.log('Incoming images (create):', body.images);
     body.images = normalizeImages(body.images);
+    console.log('Normalized images (create):', body.images);
 
     const product = await Product.create(body);
     res.status(201).json(product);
@@ -88,7 +97,9 @@ export const updateProduct = async (req, res) => {
       catch { body.customizationOptions = {}; }
     }
 
+    console.log('Incoming images (update):', body.images);
     body.images = normalizeImages(body.images);
+    console.log('Normalized images (update):', body.images);
 
     const product = await Product.findByIdAndUpdate(req.params.id, body, {
       new: true, runValidators: true,
