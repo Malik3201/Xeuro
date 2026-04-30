@@ -1,6 +1,6 @@
 // controllers/productController.js
 import Product from '../models/Product.js';
-import cloudinary from '../config/cloudinary.js';
+import cloudinary, { uploadToCloudinary } from '../config/cloudinary.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -36,10 +36,13 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const images = req.files?.map((f) => ({
-      url: f.path,
-      public_id: f.filename,
-    })) || [];
+    const images = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer);
+        images.push({ url: result.secure_url, public_id: result.public_id });
+      }
+    }
     const product = await Product.create({ ...req.body, images });
     res.status(201).json(product);
   } catch (error) {
