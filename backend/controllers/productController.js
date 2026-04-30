@@ -43,7 +43,19 @@ export const createProduct = async (req, res) => {
         images.push({ url: result.secure_url, public_id: result.public_id });
       }
     }
-    const product = await Product.create({ ...req.body, images });
+
+    // FormData sends everything as strings — parse them properly
+    const body = { ...req.body };
+    if (typeof body.customizationOptions === 'string') {
+      try { body.customizationOptions = JSON.parse(body.customizationOptions); }
+      catch { body.customizationOptions = {}; }
+    }
+    if (body.price !== undefined) body.price = Number(body.price);
+    if (body.MOQ !== undefined) body.MOQ = Number(body.MOQ);
+    if (body.stock !== undefined) body.stock = Number(body.stock);
+    if (body.isAvailable !== undefined) body.isAvailable = body.isAvailable === 'true' || body.isAvailable === true;
+
+    const product = await Product.create({ ...body, images });
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
