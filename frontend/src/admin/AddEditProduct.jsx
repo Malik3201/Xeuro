@@ -45,15 +45,11 @@ export default function AddEditProduct() {
           fd.append(k, typeof v === 'object' ? JSON.stringify(v) : v)
         );
         images.forEach((img) => fd.append('images', img));
-        await api.post('/products', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post('/products', fd);
         toast.success('Product created');
       }
       navigate('/admin/products');
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Save failed';
-      toast.error(msg);
-      console.error('Product save error:', err?.response?.data || err);
-    }
+    } catch { toast.error('Save failed'); }
     finally { setLoading(false); }
   };
 

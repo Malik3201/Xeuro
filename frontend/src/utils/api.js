@@ -3,7 +3,8 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  headers: { 'Content-Type': 'application/json' },
+  // Do NOT set Content-Type here — axios auto-sets it correctly:
+  // 'application/json' for plain objects, 'multipart/form-data; boundary=...' for FormData
 });
 
 // Attach admin token automatically
