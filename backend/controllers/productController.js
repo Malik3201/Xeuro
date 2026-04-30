@@ -1,6 +1,5 @@
 // controllers/productController.js
 import Product from '../models/Product.js';
-import cloudinary, { uploadToCloudinary } from '../config/cloudinary.js';
 
 export const getProducts = async (req, res) => {
   try {
@@ -36,16 +35,9 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const images = [];
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const result = await uploadToCloudinary(file.buffer);
-        images.push({ url: result.secure_url, public_id: result.public_id });
-      }
-    }
-
-    // FormData sends everything as strings — parse them properly
     const body = { ...req.body };
+
+    // Parse fields that may come as strings (from FormData — though now we use JSON)
     if (typeof body.customizationOptions === 'string') {
       try { body.customizationOptions = JSON.parse(body.customizationOptions); }
       catch { body.customizationOptions = {}; }
@@ -53,9 +45,17 @@ export const createProduct = async (req, res) => {
     if (body.price !== undefined) body.price = Number(body.price);
     if (body.MOQ !== undefined) body.MOQ = Number(body.MOQ);
     if (body.stock !== undefined) body.stock = Number(body.stock);
-    if (body.isAvailable !== undefined) body.isAvailable = body.isAvailable === 'true' || body.isAvailable === true;
+    if (body.isAvailable !== undefined)
+      body.isAvailable = body.isAvailable === 'true' || body.isAvailable === true;
 
-    const product = await Product.create({ ...body, images });
+    // images: array of URL strings from the admin → store as [{ url }]
+    if (Array.isArray(body.images)) {
+      body.images = body.images
+        .filter((u) => typeof u === 'string' && u.trim())
+        .map((url) => ({ url: url.trim(), public_id: '' }));
+    }
+
+    const product = await Product.create(body);
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,7 +64,21 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    const body = { ...req.body };
+    if (body.price !== undefined) body.price = Number(body.price);
+    if (body.MOQ !== undefined) body.MOQ = Number(body.MOQ);
+    if (body.stock !== undefined) body.stock = Number(body.stock);
+    if (typeof body.customizationOptions === 'string') {
+      try { body.customizationOptions = JSON.parse(body.customizationOptions); }
+      catch { body.customizationOptions = {}; }
+    }
+    if (Array.isArray(body.images)) {
+      body.images = body.images
+        .filter((u) => typeof u === 'string' && u.trim())
+        .map((url) => ({ url: url.trim(), public_id: '' }));
+    }
+
+    const product = await Product.findByIdAndUpdate(req.params.id, body, {
       new: true, runValidators: true,
     });
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -78,10 +92,6 @@ export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    // Delete images from Cloudinary
-    for (const img of product.images) {
-      await cloudinary.uploader.destroy(img.public_id);
-    }
     await product.deleteOne();
     res.json({ message: 'Product removed' });
   } catch (error) {
