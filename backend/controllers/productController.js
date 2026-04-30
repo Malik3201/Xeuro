@@ -1,6 +1,25 @@
 // controllers/productController.js
 import Product from '../models/Product.js';
 
+/**
+ * Normalize the images field — handles all incoming shapes:
+ *   - single string:          "https://..."
+ *   - array of strings:       ["https://...", "https://..."]
+ *   - already shaped objects: [{ url: "https://..." }]
+ * Always returns: [{ url: String, public_id: "" }]
+ */
+const normalizeImages = (raw) => {
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : [raw]; // wrap string in array
+  return arr
+    .map((item) => {
+      if (typeof item === 'string') return { url: item.trim(), public_id: '' };
+      if (item && typeof item === 'object' && item.url) return { url: item.url.trim(), public_id: item.public_id || '' };
+      return null;
+    })
+    .filter((item) => item && item.url); // drop empty/invalid
+};
+
 export const getProducts = async (req, res) => {
   try {
     const { category, minPrice, maxPrice, search, page = 1, limit = 12 } = req.query;
@@ -37,23 +56,18 @@ export const createProduct = async (req, res) => {
   try {
     const body = { ...req.body };
 
-    // Parse fields that may come as strings (from FormData — though now we use JSON)
+    // Parse customizationOptions if sent as JSON string
     if (typeof body.customizationOptions === 'string') {
       try { body.customizationOptions = JSON.parse(body.customizationOptions); }
       catch { body.customizationOptions = {}; }
     }
     if (body.price !== undefined) body.price = Number(body.price);
-    if (body.MOQ !== undefined) body.MOQ = Number(body.MOQ);
-    if (body.stock !== undefined) body.stock = Number(body.stock);
+    if (body.MOQ   !== undefined) body.MOQ   = Number(body.MOQ);
+    if (body.stock !== undefined) body.stock  = Number(body.stock);
     if (body.isAvailable !== undefined)
       body.isAvailable = body.isAvailable === 'true' || body.isAvailable === true;
 
-    // images: array of URL strings from the admin → store as [{ url }]
-    if (Array.isArray(body.images)) {
-      body.images = body.images
-        .filter((u) => typeof u === 'string' && u.trim())
-        .map((url) => ({ url: url.trim(), public_id: '' }));
-    }
+    body.images = normalizeImages(body.images);
 
     const product = await Product.create(body);
     res.status(201).json(product);
@@ -65,18 +79,16 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const body = { ...req.body };
+
     if (body.price !== undefined) body.price = Number(body.price);
-    if (body.MOQ !== undefined) body.MOQ = Number(body.MOQ);
-    if (body.stock !== undefined) body.stock = Number(body.stock);
+    if (body.MOQ   !== undefined) body.MOQ   = Number(body.MOQ);
+    if (body.stock !== undefined) body.stock  = Number(body.stock);
     if (typeof body.customizationOptions === 'string') {
       try { body.customizationOptions = JSON.parse(body.customizationOptions); }
       catch { body.customizationOptions = {}; }
     }
-    if (Array.isArray(body.images)) {
-      body.images = body.images
-        .filter((u) => typeof u === 'string' && u.trim())
-        .map((url) => ({ url: url.trim(), public_id: '' }));
-    }
+
+    body.images = normalizeImages(body.images);
 
     const product = await Product.findByIdAndUpdate(req.params.id, body, {
       new: true, runValidators: true,
